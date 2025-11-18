@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mysteriousq AI Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap');
+
+        body {
+            font-family: 'Google Sans', 'Product Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            background: #131314;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Gemini-style animated background */
+        .gemini-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: #131314;
+        }
+
+        .gemini-bg::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(138, 180, 248, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(232, 111, 133, 0.06) 0%, transparent 40%),
+                radial-gradient(circle at 40% 20%, rgba(251, 188, 4, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 60% 70%, rgba(129, 201, 149, 0.06) 0%, transparent 40%);
+            animation: geminiMove 25s ease-in-out infinite;
+        }
+
+        @keyframes geminiMove {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(-8%, -8%) rotate(120deg); }
+            66% { transform: translate(8%, 8%) rotate(240deg); }
+        }
+
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #131314;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(138, 180, 248, 0.1);
+            border-top: 3px solid #8ab4f8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 24px;
+            color: #8ab4f8;
+            font-size: 16px;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 720px;
+            height: 90vh;
+            background: #1e1f20;
+            border-radius: 28px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-header {
+            background: #1e1f20;
+            color: #e3e3e3;
+            padding: 28px 24px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-header h1 {
+            font-size: 22px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            letter-spacing: 0.2px;
+        }
+
+        .chat-header h1 .mysteriousq-text {
+            background: linear-gradient(90deg, 
+                #8ab4f8 0%,      /* Blue */
+                #81c995 20%,     /* Green */
+                #fdd663 40%,     /* Yellow */
+                #f28b82 60%,     /* Red */
+                #c58af9 80%,     /* Purple */
+                #8ab4f8 100%     /* Blue */
+            );
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: inline;
+        }
+
+        .chat-header p {
+            font-size: 13px;
+            opacity: 0.7;
+            font-weight: 400;
+            color: #9aa0a6;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background: #131314;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(138, 180, 248, 0.3);
+            border-radius: 10px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: rgba(138, 180, 248, 0.5);
+        }
+
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 80%;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            align-self: flex-end;
+        }
+
+        .message.bot {
+            align-self: flex-start;
+        }
+
+        .message-bubble {
+            padding: 14px 18px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            line-height: 1.6;
+            box-shadow: none;
+            white-space: pre-wrap;
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        .message.user .message-bubble {
+            background: #2d3135;
+            color: #e3e3e3;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.bot .message-bubble {
+            background: #1e1f20;
+            color: #e3e3e3;
+            border-bottom-left-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .message-label {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 5px;
+            padding: 0 5px;
+        }
+
+        .message.user .message-label {
+            text-align: right;
+        }
+
+        .thinking {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 18px;
+            background: #f0f0f0;
+            border-radius: 18px;
+            color: #667eea;
+            font-style: italic;
+            max-width: 80%;
+            animation: pulse 1.5s ease infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .thinking-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .thinking-dots span {
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: bounce 1.4s ease infinite;
+        }
+
+        .thinking-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .thinking-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes bounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        .error-message {
+            background: #ff4444;
+            color: white;
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 14px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .send-button {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .send-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .send-button:active {
+            transform: translateY(0);
+        }
+
+        .send-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .chat-footer {
+            padding: 15px;
+            text-align: center;
+            background: #f9f9f9;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .chat-footer p {
+            font-size: 12px;
+            color: #666;
+            margin: 3px 0;
+        }
+
+        .chat-footer .powered {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .chat-footer .developer {
+            color: #999;
+        }
+
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #999;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .empty-state h2 {
+            font-size: 24px;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                height: 100vh;
+                border-radius: 0;
+            }
+
+            .chat-header h1 {
+                font-size: 24px;
+            }
+
+            .message {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1> <span class="mysteriousq-text">Mysteriousq AI Chat</span></h1>
+            <p>Chat with AI Assistant</p>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="empty-state">
+                <h2>👋 Welcome!</h2>
+                <p>Start chatting with AI</p>
+            </div>
+        </div>
+
+        <div class="chat-input-container">
+            <div class="chat-input-wrapper">
+                <input 
+                    type="text" 
+                    class="chat-input" 
+                    id="messageInput" 
+                    placeholder="Ask Mysteriousq..."
+                    autocomplete="off"
+                >
+                <button class="send-button" id="sendButton" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+
+        <div class="chat-footer">
+            <p class="powered">Powered by ChatGPT</p>
+            <p class="developer">Developed by Siegfried Samá</p>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+
+        // Auto-focus input
+        messageInput.focus();
+
+        // Send on Enter key
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !sendButton.disabled) {
+                sendMessage();
+            }
+        });
+
+        // Remove empty state
+        function removeEmptyState() {
+            const emptyState = chatMessages.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+        }
+
+        // Add message to chat
+        function addMessage(text, sender) {
+            removeEmptyState();
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+
+            const label = document.createElement('div');
+            label.className = 'message-label';
+            label.textContent = sender === 'user' ? 'You' : 'Mysteriousq AI';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = text;
+
+            messageDiv.appendChild(label);
+            messageDiv.appendChild(bubble);
+            chatMessages.appendChild(messageDiv);
+
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Format text with proper line breaks and numbering
+        function formatText(text) {
+            // Replace **text** with line breaks before and after for emphasis
+            text = text.replace(/\*\*(.*?)\*\*/g, '\n$1\n');
+            
+            // Add proper spacing for numbered lists
+            text = text.replace(/(\d+)\.\s+/g, '\n\n$1. ');
+            
+            // Clean up multiple newlines
+            text = text.replace(/\n{3,}/g, '\n\n');
+            
+            // Trim whitespace
+            text = text.trim();
+            
+            return text;
+        }
+
+        // Typewriter effect for bot messages
+        function typewriterEffect(element, text, speed = 20) {
+            let index = 0;
+            element.textContent = '';
+            
+            return new Promise((resolve) => {
+                function type() {
+                    if (index < text.length) {
+                        element.textContent += text.charAt(index);
+                        index++;
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                        setTimeout(type, speed);
+                    } else {
+                        resolve();
+                    }
+                }
+                type();
+            });
+        }
+
+        // Add bot message with typewriter effect
+        async function addBotMessage(text) {
+            removeEmptyState();
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+
+            const label = document.createElement('div');
+            label.className = 'message-label';
+            label.textContent = 'Mysteriousq AI';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+
+            messageDiv.appendChild(label);
+            messageDiv.appendChild(bubble);
+            chatMessages.appendChild(messageDiv);
+
+            // Format text properly
+            const formattedText = formatText(text);
+            
+            // Start typewriter effect
+            await typewriterEffect(bubble, formattedText);
+        }
+
+        // Show thinking indicator
+        function showThinking() {
+            removeEmptyState();
+
+            const thinkingDiv = document.createElement('div');
+            thinkingDiv.className = 'message bot';
+            thinkingDiv.id = 'thinking';
+
+            const thinking = document.createElement('div');
+            thinking.className = 'thinking';
+            thinking.innerHTML = `
+                Mysteriousq AI is thinking
+                <div class="thinking-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            `;
+
+            thinkingDiv.appendChild(thinking);
+            chatMessages.appendChild(thinkingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Remove thinking indicator
+        function removeThinking() {
+            const thinking = document.getElementById('thinking');
+            if (thinking) {
+                thinking.remove();
+            }
+        }
+
+        // Show error message
+        function showError(message) {
+            removeThinking();
+            removeEmptyState();
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+
+            const label = document.createElement('div');
+            label.className = 'message-label';
+            label.textContent = 'System';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble error-message';
+            bubble.textContent = message;
+
+            messageDiv.appendChild(label);
+            messageDiv.appendChild(bubble);
+            chatMessages.appendChild(messageDiv);
+
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Send message
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            
+            if (!message) return;
+
+            // Disable input
+            sendButton.disabled = true;
+            messageInput.disabled = true;
+
+            // Add user message
+            addMessage(message, 'user');
+            messageInput.value = '';
+
+            // Show thinking
+            showThinking();
+
+            try {
+                // Use new API
+                const apiUrl = `https://kryptonite-api-library.onrender.com/api/aigf?message=${encodeURIComponent(message)}`;
+                const res = await fetch(apiUrl);
+                
+                if (!res.ok) {
+                    throw new Error(`API Error: ${res.status}`);
+                }
+                
+                const data = await res.json();
+                console.log('API Response:', data);
+                
+                let response;
+                
+                // Try different possible response fields
+                if (data.response) {
+                    response = data.response;
+                } else if (data.reply) {
+                    response = data.reply;
+                } else if (data.result) {
+                    response = data.result;
+                } else if (data.message) {
+                    response = data.message;
+                } else if (data.answer) {
+                    response = data.answer;
+                } else {
+                    throw new Error('Invalid API response format');
+                }
+
+                // Remove thinking and show response with typewriter effect
+                removeThinking();
+                await addBotMessage(response);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError('❌ Oops! Something went wrong. Please try again.');
+            } finally {
+                // Re-enable input
+                sendButton.disabled = false;
+                messageInput.disabled = false;
+                messageInput.focus();
+            }
+        }
+    </script>
+</body>
+</html>
