@@ -714,4 +714,253 @@
 
             const label = document.createElement('div');
             label.className = 'message-label';
-            label.textContent = sender === 'user' ? 'You' : 'Mysterio
+            label.textContent = sender === 'user' ? 'You' : 'Mysteriousq AI';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = text;
+
+            msg.appendChild(label);
+            msg.appendChild(bubble);
+            chatMessages.appendChild(msg);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function add3DotMenu(bubble, text) {
+            const menuBtn = document.createElement('button');
+            menuBtn.className = 'message-menu-btn';
+            menuBtn.innerHTML = '⋮';
+            menuBtn.setAttribute('aria-label', 'Message options');
+            menuBtn.onclick = (e) => {
+                e.stopPropagation();
+                const menu = bubble.querySelector('.message-menu');
+                menu.classList.toggle('show');
+            };
+
+            const menu = document.createElement('div');
+            menu.className = 'message-menu';
+            menu.innerHTML = `
+                <div class="message-menu-item" onclick="copyText('${text.replace(/'/g, "\\'")}')">📋 Copy</div>
+                <div class="message-menu-item" onclick="selectText(event)">🔤 Select text</div>
+            `;
+
+            bubble.appendChild(menuBtn);
+            bubble.appendChild(menu);
+        }
+
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('✓ Copied');
+                document.querySelectorAll('.message-menu').forEach(m => m.classList.remove('show'));
+            });
+        }
+
+        function selectText(e) {
+            const bubble = e.target.closest('.message-bubble');
+            const range = document.createRange();
+            range.selectNodeContents(bubble);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            document.querySelectorAll('.message-menu').forEach(m => m.classList.remove('show'));
+        }
+
+        function showThinking() {
+            removeEmptyState();
+
+            const container = document.createElement('div');
+            container.className = 'thinking-container';
+            container.id = 'thinking';
+
+            const label = document.createElement('div');
+            label.className = 'message-label';
+            label.textContent = 'Mysteriousq AI';
+
+            const thinking = document.createElement('div');
+            thinking.className = 'thinking';
+            thinking.innerHTML = `Thinking<div class="thinking-dots"><span></span><span></span><span></span></div>`;
+
+            container.appendChild(label);
+            container.appendChild(thinking);
+            chatMessages.appendChild(container);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function removeThinking() {
+            const t = document.getElementById('thinking');
+            if (t) t.remove();
+        }
+
+        function showError(msg, canRetry = false) {
+            removeThinking();
+            removeEmptyState();
+
+            const container = document.createElement('div');
+            container.className = 'message bot';
+
+            const label = document.createElement('div');
+            label.className = 'message-label';
+            label.textContent = 'System';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble error-message';
+            bubble.textContent = msg;
+
+            if (canRetry) {
+                const retryBtn = document.createElement('button');
+                retryBtn.className = 'retry-btn';
+                retryBtn.textContent = '↻ Retry';
+                retryBtn.onclick = () => {
+                    container.remove();
+                    if (lastUserMessage) {
+                        messageInput.value = lastUserMessage;
+                        sendMessage();
+                    }
+                };
+                bubble.appendChild(retryBtn);
+            }
+
+            container.appendChild(label);
+            container.appendChild(bubble);
+            chatMessages.appendChild(container);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function formatText(text) {
+            text = text.replace(/\*\*(.*?)\*\*/g, '\n$1\n');
+            text = text.replace(/(\d+)\.\s+/g, '\n\n$1. ');
+            text = text.replace(/\n{3,}/g, '\n\n');
+            return text.trim();
+        }
+
+        async function typewriterEffect(element, text, speed = CONFIG.typewriterSpeed) {
+            let i = 0;
+            element.textContent = '';
+            
+            return new Promise((resolve) => {
+                function type() {
+                    if (i < text.length) {
+                        // Add character
+                        element.textContent += text.charAt(i);
+                        i++;
+                        
+                        // Scroll to bottom
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                        
+                        // Use requestAnimationFrame for better performance on long text
+                        if (i % 10 === 0) {
+                            requestAnimationFrame(() => setTimeout(type, speed));
+                        } else {
+                            setTimeout(type, speed);
+                        }
+                    } else {
+                        resolve();
+                    }
+                }
+                type();
+            });
+        }
+
+        async function addBotMessage(text) {
+            removeEmptyState();
+
+            const msg = document.createElement('div');
+            msg.className = 'message bot';
+
+            const label = document.createElement('div');
+            label.className = 'message-label';
+            label.textContent = 'Mysteriousq AI';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+
+            msg.appendChild(label);
+            msg.appendChild(bubble);
+            chatMessages.appendChild(msg);
+
+            const formatted = formatText(text);
+            
+            try {
+                // Ensure full text is typed, no matter how long
+                await typewriterEffect(bubble, formatted);
+            } catch (e) {
+                // Fallback: show full text immediately if typewriter fails
+                console.warn('Typewriter effect failed, showing full text:', e);
+                bubble.textContent = formatted;
+            }
+
+            // Add 3-dot menu after typing is complete
+            add3DotMenu(bubble, formatted);
+            
+            // Final scroll to ensure everything is visible
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const msg = messageInput.value.trim();
+            if (!msg) return;
+
+            lastUserMessage = msg;
+            sendButton.disabled = true;
+            sendButton.classList.add('sending');
+            sendButton.setAttribute('aria-busy', 'true');
+            messageInput.disabled = true;
+
+            addMessage(msg, 'user');
+            messageInput.value = '';
+
+            showThinking();
+
+            try {
+                const url = `${CONFIG.apiUrl}?prompt=${encodeURIComponent(msg)}&uid=${USER_ID}`;
+                const res = await fetch(url);
+                
+                if (!res.ok) {
+                    throw new Error(`API Error: ${res.status}`);
+                }
+                
+                const data = await res.json();
+                console.log('API Response:', data);
+                console.log('Response length:', data.response?.length || 0);
+                
+                // Check for API error
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                // Get response from various possible fields
+                let response = data.response || data.reply || data.result || data.message || data.answer;
+                
+                if (!response) {
+                    throw new Error('No response from API');
+                }
+
+                // Check if response seems cut off
+                const lastChar = response.trim().slice(-1);
+                const seemsCutOff = !'.!?'.includes(lastChar) && response.length > 500;
+                
+                removeThinking();
+                await addBotMessage(response);
+                
+                // If response seems incomplete, show a hint
+                if (seemsCutOff) {
+                    console.warn('Response may be incomplete. API returned:', response.length, 'characters');
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                const errorMsg = error.message.includes('prompt and uid') 
+                    ? '❌ API configuration error. Please check settings.'
+                    : '❌ Connection failed. Check your internet or try again.';
+                showError(errorMsg, true);
+            } finally {
+                sendButton.disabled = false;
+                sendButton.classList.remove('sending');
+                sendButton.setAttribute('aria-busy', 'false');
+                messageInput.disabled = false;
+                messageInput.focus();
+            }
+        }
+    </script>
+</body>
+</html>
