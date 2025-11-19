@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Mysteriousq AI Chat</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,8 +15,9 @@
         }
 
         body {
-            font-family: 'Google Sans', 'Product Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: "Google Sans", "Product Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
             font-size: 14px;
+            line-height: 1.45;
             min-height: 100vh;
             background: #131314;
             display: flex;
@@ -57,7 +58,7 @@
             50% { transform: translate(-5%, -5%) rotate(180deg); }
         }
 
-        /* Loading Screen - FORCED VISIBLE */
+        /* Loading Screen */
         #loadingScreen {
             position: fixed;
             top: 0;
@@ -111,6 +112,7 @@
             width: 100%;
             max-width: 100%;
             height: 100vh;
+            height: 100dvh;
             background: #1e1f20;
             display: flex;
             flex-direction: column;
@@ -151,7 +153,7 @@
         }
 
         .chat-header p {
-            font-size: 12px;
+            font-size: 11px;
             color: #9aa0a6;
             margin-top: 4px;
             font-weight: 400;
@@ -164,7 +166,7 @@
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 16px;
             background: #131314;
         }
 
@@ -186,6 +188,7 @@
             flex-direction: column;
             max-width: 85%;
             animation: slideIn 0.3s ease;
+            position: relative;
         }
 
         @keyframes slideIn {
@@ -220,13 +223,15 @@
         }
 
         .message-bubble {
-            padding: 10px 14px;
-            border-radius: 16px;
+            padding: 12px 16px;
+            border-radius: 18px;
             word-wrap: break-word;
+            word-break: break-word;
             line-height: 1.5;
             white-space: pre-wrap;
             font-size: 14px;
             font-weight: 400;
+            position: relative;
         }
 
         .message.user .message-bubble {
@@ -240,6 +245,80 @@
             color: #e3e3e3;
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-bottom-left-radius: 4px;
+        }
+
+        /* 3-Dot Menu */
+        .message-menu-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: transparent;
+            border: none;
+            color: #9aa0a6;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            opacity: 0;
+            transition: all 0.2s ease;
+        }
+
+        .message.bot:hover .message-menu-btn {
+            opacity: 1;
+        }
+
+        .message-menu-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .message-menu {
+            position: absolute;
+            top: 32px;
+            right: 0;
+            background: #2d3135;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 4px 0;
+            min-width: 140px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            z-index: 100;
+            display: none;
+            animation: menuFadeIn 0.15s ease;
+        }
+
+        @keyframes menuFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-4px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-menu.show {
+            display: block;
+        }
+
+        .message-menu-item {
+            padding: 8px 16px;
+            font-size: 13px;
+            color: #e3e3e3;
+            cursor: pointer;
+            transition: background 0.15s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .message-menu-item:hover {
+            background: rgba(138, 180, 248, 0.15);
         }
 
         /* Thinking Indicator */
@@ -256,7 +335,7 @@
             gap: 8px;
             padding: 10px 14px;
             background: #1e1f20;
-            border-radius: 16px;
+            border-radius: 18px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-bottom-left-radius: 4px;
             font-size: 13px;
@@ -296,9 +375,23 @@
             border-color: rgba(242, 139, 130, 0.3) !important;
         }
 
+        .retry-btn {
+            margin-top: 8px;
+            padding: 6px 12px;
+            background: #8ab4f8;
+            color: #131314;
+            border: none;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
         /* Input Area */
         .chat-input-container {
-            padding: 12px 16px 16px;
+            padding: 12px 16px;
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
             background: #1e1f20;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
             flex-shrink: 0;
@@ -340,40 +433,99 @@
 
         .chat-input:focus {
             border-color: #8ab4f8;
-            background: #2d3135;
         }
 
+        /* Gemini-style Send Button */
         .send-button {
-            padding: 12px 20px;
-            background: #8ab4f8;
-            color: #131314;
+            position: relative;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            background: #2d3135;
+            color: #e3e3e3;
             border: none;
-            border-radius: 24px;
-            font-size: 14px;
-            font-weight: 500;
+            border-radius: 50%;
+            font-size: 20px;
             cursor: pointer;
             font-family: inherit;
-            transition: all 0.15s ease;
+            transition: all 0.2s ease;
             flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255, 255, 255, 0.12);
         }
 
         .send-button:hover {
-            background: #aecbfa;
+            background: #3a3d42;
         }
 
         .send-button:active {
-            transform: scale(0.96);
+            transform: scale(0.94);
         }
 
         .send-button:disabled {
-            background: #5f6368;
-            color: #9aa0a6;
+            background: #2d3135;
+            color: #5f6368;
             cursor: not-allowed;
+        }
+
+        .send-button-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .send-button-icon svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .send-button-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(19, 19, 20, 0.3);
+            border-top-color: #131314;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            display: none;
+        }
+
+        .send-button.sending .send-button-spinner {
+            display: block;
+        }
+
+        .send-button.sending .send-button-icon {
+            display: none;
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2d3135;
+            color: #e3e3e3;
+            padding: 12px 20px;
+            border-radius: 24px;
+            font-size: 13px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
         }
 
         /* Footer */
         .chat-footer {
-            padding: 12px 16px;
+            padding: 10px 16px;
+            padding-bottom: max(10px, env(safe-area-inset-bottom));
             text-align: center;
             background: #1e1f20;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -383,7 +535,7 @@
         .chat-footer p {
             font-size: 11px;
             color: #9aa0a6;
-            margin: 2px 0;
+            margin: 0;
             font-weight: 400;
         }
 
@@ -436,22 +588,22 @@
 </head>
 <body>
     <!-- Loading Screen -->
-    <div id="loadingScreen">
+    <div id="loadingScreen" role="status" aria-live="polite" aria-label="Loading">
         <div class="loader"></div>
         <div class="loading-text">Loading...</div>
     </div>
 
     <!-- Background -->
-    <div class="gemini-bg"></div>
+    <div class="gemini-bg" aria-hidden="true"></div>
 
     <!-- Chat -->
-    <div class="chat-container" id="chatContainer">
+    <div class="chat-container" id="chatContainer" role="main">
         <div class="chat-header">
-            <h1>🤖 <span class="mysteriousq-text">Mysteriousq AI Chat</span></h1>
-            <p>Chat with AI Assistant</p>
+            <h1><span class="mysteriousq-text">Mysteriousq AI Chat</span></h1>
+            <p>Developed by Siegfried Samá</p>
         </div>
 
-        <div class="chat-messages" id="chatMessages">
+        <div class="chat-messages" id="chatMessages" role="log" aria-live="polite" aria-label="Chat messages">
             <div class="empty-state">
                 <h2>👋 Welcome!</h2>
                 <p>Start chatting with AI</p>
@@ -466,38 +618,76 @@
                     id="messageInput" 
                     placeholder="Ask Mysteriousq..."
                     autocomplete="off"
+                    aria-label="Type your message"
                 >
-                <button class="send-button" id="sendButton" onclick="sendMessage()">Send</button>
+                <button 
+                    class="send-button" 
+                    id="sendButton" 
+                    onclick="sendMessage()"
+                    aria-label="Send message"
+                >
+                    <span class="send-button-icon">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                        </svg>
+                    </span>
+                    <span class="send-button-spinner"></span>
+                </button>
             </div>
         </div>
 
         <div class="chat-footer">
             <p class="powered">Powered by ChatGPT</p>
-            <p>Developed by Siegfried Samá</p>
         </div>
     </div>
 
+    <!-- Toast -->
+    <div class="toast" id="toast" role="alert"></div>
+
     <script>
-        // FORCE LOADING SCREEN
+        // Config
+        const CONFIG = {
+            typewriterSpeed: 15,
+            loadingDuration: 2000,
+            toastDuration: 1500
+        };
+
+        // Elements
         const loadingScreen = document.getElementById('loadingScreen');
         const chatContainer = document.getElementById('chatContainer');
         const chatMessages = document.getElementById('chatMessages');
         const messageInput = document.getElementById('messageInput');
         const sendButton = document.getElementById('sendButton');
+        const toast = document.getElementById('toast');
 
-        // Show loading for minimum 2 seconds
+        let lastUserMessage = '';
+
+        // Force loading screen
         setTimeout(() => {
             loadingScreen.classList.add('hidden');
             chatContainer.classList.add('visible');
-        }, 2000);
+            messageInput.focus();
+        }, CONFIG.loadingDuration);
 
-        messageInput.focus();
-
+        // Keyboard navigation
         messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !sendButton.disabled) {
                 sendMessage();
             }
         });
+
+        // Close menus on click outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.message-menu-btn') && !e.target.closest('.message-menu')) {
+                document.querySelectorAll('.message-menu').forEach(m => m.classList.remove('show'));
+            }
+        });
+
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), CONFIG.toastDuration);
+        }
 
         function removeEmptyState() {
             const empty = chatMessages.querySelector('.empty-state');
@@ -524,137 +714,6 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        function showThinking() {
-            removeEmptyState();
-
-            const container = document.createElement('div');
-            container.className = 'thinking-container';
-            container.id = 'thinking';
-
-            const label = document.createElement('div');
-            label.className = 'message-label';
-            label.textContent = 'Mysteriousq AI';
-
-            const thinking = document.createElement('div');
-            thinking.className = 'thinking';
-            thinking.innerHTML = `
-                Thinking<div class="thinking-dots"><span></span><span></span><span></span></div>
-            `;
-
-            container.appendChild(label);
-            container.appendChild(thinking);
-            chatMessages.appendChild(container);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        function removeThinking() {
-            const t = document.getElementById('thinking');
-            if (t) t.remove();
-        }
-
-        function showError(msg) {
-            removeThinking();
-            removeEmptyState();
-
-            const container = document.createElement('div');
-            container.className = 'message bot';
-
-            const label = document.createElement('div');
-            label.className = 'message-label';
-            label.textContent = 'System';
-
-            const bubble = document.createElement('div');
-            bubble.className = 'message-bubble error-message';
-            bubble.textContent = msg;
-
-            container.appendChild(label);
-            container.appendChild(bubble);
-            chatMessages.appendChild(container);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        function formatText(text) {
-            text = text.replace(/\*\*(.*?)\*\*/g, '\n$1\n');
-            text = text.replace(/(\d+)\.\s+/g, '\n\n$1. ');
-            text = text.replace(/\n{3,}/g, '\n\n');
-            return text.trim();
-        }
-
-        async function typewriterEffect(element, text, speed = 15) {
-            let i = 0;
-            element.textContent = '';
-            
-            return new Promise((resolve) => {
-                function type() {
-                    if (i < text.length) {
-                        element.textContent += text.charAt(i);
-                        i++;
-                        chatMessages.scrollTop = chatMessages.scrollHeight;
-                        setTimeout(type, speed);
-                    } else {
-                        resolve();
-                    }
-                }
-                type();
-            });
-        }
-
-        async function addBotMessage(text) {
-            removeEmptyState();
-
-            const msg = document.createElement('div');
-            msg.className = 'message bot';
-
-            const label = document.createElement('div');
-            label.className = 'message-label';
-            label.textContent = 'Mysteriousq AI';
-
-            const bubble = document.createElement('div');
-            bubble.className = 'message-bubble';
-
-            msg.appendChild(label);
-            msg.appendChild(bubble);
-            chatMessages.appendChild(msg);
-
-            const formatted = formatText(text);
-            await typewriterEffect(bubble, formatted);
-        }
-
-        async function sendMessage() {
-            const msg = messageInput.value.trim();
-            if (!msg) return;
-
-            sendButton.disabled = true;
-            messageInput.disabled = true;
-
-            addMessage(msg, 'user');
-            messageInput.value = '';
-
-            showThinking();
-
-            try {
-                const url = `https://kryptonite-api-library.onrender.com/api/aigf?message=${encodeURIComponent(msg)}`;
-                const res = await fetch(url);
-                
-                if (!res.ok) throw new Error(`API Error: ${res.status}`);
-                
-                const data = await res.json();
-                let response = data.response || data.reply || data.result || data.message || data.answer;
-                
-                if (!response) throw new Error('Invalid API response');
-
-                removeThinking();
-                await addBotMessage(response);
-
-            } catch (error) {
-                console.error('Error:', error);
-                showError('❌ Something went wrong. Please try again.');
-            } finally {
-                sendButton.disabled = false;
-                messageInput.disabled = false;
-                messageInput.focus();
-            }
-        }
-    </script>
-</body>
-</html>
+        function add3DotMenu(bubble, text) {
+            const menuBtn = document.createElement('button');
+         
