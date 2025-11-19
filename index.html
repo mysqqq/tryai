@@ -599,7 +599,7 @@
     <!-- Chat -->
     <div class="chat-container" id="chatContainer" role="main">
         <div class="chat-header">
-            <h1><span class="mysteriousq-text">Mysteriousq AI Chat</span></h1>
+            <h1>🤖 <span class="mysteriousq-text">Mysteriousq AI Chat</span></h1>
             <p>Developed by Siegfried Samá</p>
         </div>
 
@@ -716,4 +716,198 @@
 
         function add3DotMenu(bubble, text) {
             const menuBtn = document.createElement('button');
-         
+            menuBtn.className = 'message-menu-btn';
+            menuBtn.innerHTML = '⋮';
+            menuBtn.setAttribute('aria-label', 'Message options');
+            menuBtn.onclick = (e) => {
+                e.stopPropagation();
+                const menu = bubble.querySelector('.message-menu');
+                menu.classList.toggle('show');
+            };
+
+            const menu = document.createElement('div');
+            menu.className = 'message-menu';
+            menu.innerHTML = `
+                <div class="message-menu-item" onclick="copyText('${text.replace(/'/g, "\\'")}')">📋 Copy</div>
+                <div class="message-menu-item" onclick="selectText(event)">🔤 Select text</div>
+            `;
+
+            bubble.appendChild(menuBtn);
+            bubble.appendChild(menu);
+        }
+
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('✓ Copied');
+                document.querySelectorAll('.message-menu').forEach(m => m.classList.remove('show'));
+            });
+        }
+
+        function selectText(e) {
+            const bubble = e.target.closest('.message-bubble');
+            const range = document.createRange();
+            range.selectNodeContents(bubble);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            document.querySelectorAll('.message-menu').forEach(m => m.classList.remove('show'));
+        }
+
+        function showThinking() {
+            removeEmptyState();
+
+            const container = document.createElement('div');
+            container.className = 'thinking-container';
+            container.id = 'thinking';
+
+            const label = document.createElement('div');
+            label.className = 'message-label';
+            label.textContent = 'Mysteriousq AI';
+
+            const thinking = document.createElement('div');
+            thinking.className = 'thinking';
+            thinking.innerHTML = `Thinking<div class="thinking-dots"><span></span><span></span><span></span></div>`;
+
+            container.appendChild(label);
+            container.appendChild(thinking);
+            chatMessages.appendChild(container);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function removeThinking() {
+            const t = document.getElementById('thinking');
+            if (t) t.remove();
+        }
+
+        function showError(msg, canRetry = false) {
+            removeThinking();
+            removeEmptyState();
+
+            const container = document.createElement('div');
+            container.className = 'message bot';
+
+            const label = document.createElement('div');
+            label.className = 'message-label';
+            label.textContent = 'System';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble error-message';
+            bubble.textContent = msg;
+
+            if (canRetry) {
+                const retryBtn = document.createElement('button');
+                retryBtn.className = 'retry-btn';
+                retryBtn.textContent = '↻ Retry';
+                retryBtn.onclick = () => {
+                    container.remove();
+                    if (lastUserMessage) {
+                        messageInput.value = lastUserMessage;
+                        sendMessage();
+                    }
+                };
+                bubble.appendChild(retryBtn);
+            }
+
+            container.appendChild(label);
+            container.appendChild(bubble);
+            chatMessages.appendChild(container);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function formatText(text) {
+            text = text.replace(/\*\*(.*?)\*\*/g, '\n$1\n');
+            text = text.replace(/(\d+)\.\s+/g, '\n\n$1. ');
+            text = text.replace(/\n{3,}/g, '\n\n');
+            return text.trim();
+        }
+
+        async function typewriterEffect(element, text, speed = CONFIG.typewriterSpeed) {
+            let i = 0;
+            element.textContent = '';
+            
+            return new Promise((resolve) => {
+                function type() {
+                    if (i < text.length) {
+                        element.textContent += text.charAt(i);
+                        i++;
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                        setTimeout(type, speed);
+                    } else {
+                        resolve();
+                    }
+                }
+                type();
+            });
+        }
+
+        async function addBotMessage(text) {
+            removeEmptyState();
+
+            const msg = document.createElement('div');
+            msg.className = 'message bot';
+
+            const label = document.createElement('div');
+            label.className = 'message-label';
+            label.textContent = 'Mysteriousq AI';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+
+            msg.appendChild(label);
+            msg.appendChild(bubble);
+            chatMessages.appendChild(msg);
+
+            const formatted = formatText(text);
+            
+            try {
+                await typewriterEffect(bubble, formatted);
+            } catch (e) {
+                bubble.textContent = formatted;
+            }
+
+            add3DotMenu(bubble, formatted);
+        }
+
+        async function sendMessage() {
+            const msg = messageInput.value.trim();
+            if (!msg) return;
+
+            lastUserMessage = msg;
+            sendButton.disabled = true;
+            sendButton.classList.add('sending');
+            sendButton.setAttribute('aria-busy', 'true');
+            messageInput.disabled = true;
+
+            addMessage(msg, 'user');
+            messageInput.value = '';
+
+            showThinking();
+
+            try {
+                const url = `https://kryptonite-api-library.onrender.com/api/aigf?message=${encodeURIComponent(msg)}`;
+                const res = await fetch(url);
+                
+                if (!res.ok) throw new Error(`API Error: ${res.status}`);
+                
+                const data = await res.json();
+                let response = data.response || data.reply || data.result || data.message || data.answer;
+                
+                if (!response) throw new Error('Invalid API response');
+
+                removeThinking();
+                await addBotMessage(response);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError('❌ Connection failed. Check your internet or try again.', true);
+            } finally {
+                sendButton.disabled = false;
+                sendButton.classList.remove('sending');
+                sendButton.setAttribute('aria-busy', 'false');
+                messageInput.disabled = false;
+                messageInput.focus();
+            }
+        }
+    </script>
+</body>
+</html>
