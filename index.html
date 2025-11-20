@@ -172,17 +172,6 @@
             font-weight: 500;
             margin: 0;
             letter-spacing: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .sparkle-icon {
-            width: 20px;
-            height: 20px;
-            display: inline-flex;
-            font-size: 20px;
         }
 
         .mysteriousq-text {
@@ -646,10 +635,7 @@
     <!-- Chat -->
     <div class="chat-container" id="chatContainer" role="main">
         <div class="chat-header">
-            <h1>
-                <span class="sparkle-icon">✨</span>
-                <span class="mysteriousq-text">Mysteriousq AI Chat</span>
-            </h1>
+            <h1><span class="mysteriousq-text">Mysteriousq AI Chat</span></h1>
             <p>Developed by Siegfried Samá</p>
         </div>
 
@@ -726,4 +712,16 @@
                 loadingScreen.classList.add('hidden');
                 chatContainer.classList.add('visible');
                 messageInput.focus();
-       
+            }, CONFIG.loadingDuration);
+        });
+
+        // Keyboard navigation
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !sendButton.disabled) {
+                sendMessage();
+            }
+        });
+
+        // Close menus on click outside
+        document.addEventListener('click', (e) => {
+   
