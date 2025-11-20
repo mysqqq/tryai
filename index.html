@@ -150,14 +150,10 @@
         }
 
         .sparkle-icon {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             display: inline-flex;
-        }
-
-        .sparkle-icon svg {
-            width: 100%;
-            height: 100%;
+            font-size: 20px;
         }
 
         .mysteriousq-text {
@@ -615,28 +611,7 @@
     <div class="chat-container" id="chatContainer" role="main">
         <div class="chat-header">
             <h1>
-                <span class="sparkle-icon">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z" fill="url(#sparkle1)"/>
-                        <path d="M19 4L19.5 6.5L22 7L19.5 7.5L19 10L18.5 7.5L16 7L18.5 6.5L19 4Z" fill="url(#sparkle2)"/>
-                        <path d="M5 14L5.5 16.5L8 17L5.5 17.5L5 20L4.5 17.5L2 17L4.5 16.5L5 14Z" fill="url(#sparkle3)"/>
-                        <defs>
-                            <linearGradient id="sparkle1" x1="4" y1="2" x2="20" y2="18" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#8ab4f8"/>
-                                <stop offset="0.5" stop-color="#c58af9"/>
-                                <stop offset="1" stop-color="#fdd663"/>
-                            </linearGradient>
-                            <linearGradient id="sparkle2" x1="16" y1="4" x2="22" y2="10" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#f28b82"/>
-                                <stop offset="1" stop-color="#fdd663"/>
-                            </linearGradient>
-                            <linearGradient id="sparkle3" x1="2" y1="14" x2="8" y2="20" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#81c995"/>
-                                <stop offset="1" stop-color="#8ab4f8"/>
-                            </linearGradient>
-                        </defs>
-                    </svg>
-                </span>
+                <span class="sparkle-icon">✨</span>
                 <span class="mysteriousq-text">Mysteriousq AI Chat</span>
             </h1>
             <p>Developed by Siegfried Samá</p>
@@ -682,7 +657,7 @@
     <script>
         const CONFIG = {
             typewriterSpeed: 12,
-            loadingDuration: 2000,
+            loadingDuration: 1000,
             toastDuration: 1500,
             apiUrl: 'https://kryptonite-api-library.onrender.com/api/gpt4-convo'
         };
@@ -702,4 +677,48 @@
         // Elements
         const loadingScreen = document.getElementById('loadingScreen');
         const chatContainer = document.getElementById('chatContainer');
-        const chatMessages = document.getEl
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const toast = document.getElementById('toast');
+
+        let lastUserMessage = '';
+
+        // Force loading screen - guaranteed to show and hide
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                loadingScreen.classList.add('hidden');
+                chatContainer.classList.add('visible');
+                messageInput.focus();
+            }, CONFIG.loadingDuration);
+        });
+
+        // Keyboard navigation
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !sendButton.disabled) {
+                sendMessage();
+            }
+        });
+
+        // Close menus on click outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.message-menu-btn') && !e.target.closest('.message-menu')) {
+                document.querySelectorAll('.message-menu').forEach(m => m.classList.remove('show'));
+            }
+        });
+
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), CONFIG.toastDuration);
+        }
+
+        function removeEmptyState() {
+            const empty = chatMessages.querySelector('.empty-state');
+            if (empty) empty.remove();
+        }
+
+        function addMessage(text, sender) {
+            removeEmptyState();
+
+            const msg =
