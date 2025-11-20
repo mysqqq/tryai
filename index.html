@@ -76,7 +76,7 @@
         }
 
         #loadingScreen.hidden {
-            animation: fadeOut 0.6s ease forwards;
+            animation: fadeOut 0.5s ease forwards;
         }
 
         @keyframes fadeOut {
@@ -86,25 +86,54 @@
             }
         }
 
-        .loader {
-            width: 48px;
-            height: 48px;
-            border: 3px solid rgba(138, 180, 248, 0.2);
-            border-top-color: #8ab4f8;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+        .loader-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            animation: pulse 2s ease-in-out infinite;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .loader-icon svg {
+            width: 48px;
+            height: 48px;
+            fill: #e9d5ff;
         }
 
         .loading-text {
-            margin-top: 20px;
-            color: #8ab4f8;
-            font-size: 14px;
-            font-weight: 400;
-            letter-spacing: 0.2px;
+            color: #a78bfa;
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        .loading-bar-container {
+            width: 280px;
+            height: 4px;
+            background: #1e1e1e;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .loading-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+            border-radius: 4px;
+            animation: loadingProgress 1.5s ease-in-out;
+        }
+
+        @keyframes loadingProgress {
+            0% { width: 0%; }
+            100% { width: 100%; }
         }
 
         /* Chat Container */
@@ -600,8 +629,15 @@
 <body>
     <!-- Loading Screen -->
     <div id="loadingScreen" role="status" aria-live="polite" aria-label="Loading">
-        <div class="loader"></div>
-        <div class="loading-text">Loading...</div>
+        <div class="loader-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M13 2L3 14h8l-1 8 10-12h-8z"/>
+            </svg>
+        </div>
+        <div class="loading-text">Loading Chat...</div>
+        <div class="loading-bar-container">
+            <div class="loading-bar"></div>
+        </div>
     </div>
 
     <!-- Background -->
@@ -657,7 +693,7 @@
     <script>
         const CONFIG = {
             typewriterSpeed: 12,
-            loadingDuration: 1000,
+            loadingDuration: 1500,
             toastDuration: 1500,
             apiUrl: 'https://kryptonite-api-library.onrender.com/api/gpt4-convo'
         };
@@ -690,35 +726,4 @@
                 loadingScreen.classList.add('hidden');
                 chatContainer.classList.add('visible');
                 messageInput.focus();
-            }, CONFIG.loadingDuration);
-        });
-
-        // Keyboard navigation
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !sendButton.disabled) {
-                sendMessage();
-            }
-        });
-
-        // Close menus on click outside
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.message-menu-btn') && !e.target.closest('.message-menu')) {
-                document.querySelectorAll('.message-menu').forEach(m => m.classList.remove('show'));
-            }
-        });
-
-        function showToast(msg) {
-            toast.textContent = msg;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), CONFIG.toastDuration);
-        }
-
-        function removeEmptyState() {
-            const empty = chatMessages.querySelector('.empty-state');
-            if (empty) empty.remove();
-        }
-
-        function addMessage(text, sender) {
-            removeEmptyState();
-
-            const msg =
+       
