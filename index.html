@@ -76,7 +76,7 @@
         }
 
         #loadingScreen.hidden {
-            animation: fadeOut 0.5s ease forwards;
+            animation: fadeOut 0.6s ease forwards;
         }
 
         @keyframes fadeOut {
@@ -86,54 +86,25 @@
             }
         }
 
-        .loader-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 24px;
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        .loader-icon svg {
+        .loader {
             width: 48px;
             height: 48px;
-            fill: #e9d5ff;
+            border: 3px solid rgba(138, 180, 248, 0.2);
+            border-top-color: #8ab4f8;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         .loading-text {
-            color: #a78bfa;
-            font-size: 20px;
-            font-weight: 500;
-            margin-bottom: 16px;
-        }
-
-        .loading-bar-container {
-            width: 280px;
-            height: 4px;
-            background: #1e1e1e;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .loading-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #8b5cf6, #a78bfa);
-            border-radius: 4px;
-            animation: loadingProgress 1.5s ease-in-out;
-        }
-
-        @keyframes loadingProgress {
-            0% { width: 0%; }
-            100% { width: 100%; }
+            margin-top: 20px;
+            color: #8ab4f8;
+            font-size: 14px;
+            font-weight: 400;
+            letter-spacing: 0.2px;
         }
 
         /* Chat Container */
@@ -147,6 +118,15 @@
             flex-direction: column;
             position: relative;
             z-index: 1;
+            opacity: 0;
+        }
+
+        .chat-container.visible {
+            animation: fadeIn 0.6s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
         }
 
         /* Header */
@@ -163,14 +143,6 @@
             font-weight: 500;
             margin: 0;
             letter-spacing: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .sparkle-icon {
-            font-size: 20px;
         }
 
         .mysteriousq-text {
@@ -615,16 +587,19 @@
     </style>
 </head>
 <body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" role="status" aria-live="polite" aria-label="Loading">
+        <div class="loader"></div>
+        <div class="loading-text">Loading...</div>
+    </div>
+
     <!-- Background -->
     <div class="gemini-bg" aria-hidden="true"></div>
 
     <!-- Chat -->
     <div class="chat-container" id="chatContainer" role="main">
         <div class="chat-header">
-            <h1>
-                <span class="sparkle-icon">✨</span>
-                <span class="mysteriousq-text">Mysteriousq AI Chat</span>
-            </h1>
+            <h1>🤖 <span class="mysteriousq-text">Mysteriousq AI Chat</span></h1>
             <p>Developed by Siegfried Samá</p>
         </div>
 
@@ -651,7 +626,11 @@
                     onclick="sendMessage()"
                     aria-label="Send message"
                 >
-                    <span class="send-button-icon">➤</span>
+                    <span class="send-button-icon">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                        </svg>
+                    </span>
                     <span class="send-button-spinner"></span>
                 </button>
             </div>
@@ -668,6 +647,7 @@
     <script>
         const CONFIG = {
             typewriterSpeed: 12,
+            loadingDuration: 2000,
             toastDuration: 1500,
             apiUrl: 'https://kryptonite-api-library.onrender.com/api/gpt4-convo'
         };
@@ -685,6 +665,7 @@
         const USER_ID = getUserID();
 
         // Elements
+        const loadingScreen = document.getElementById('loadingScreen');
         const chatContainer = document.getElementById('chatContainer');
         const chatMessages = document.getElementById('chatMessages');
         const messageInput = document.getElementById('messageInput');
@@ -693,10 +674,12 @@
 
         let lastUserMessage = '';
 
-        // Focus input on load
-        window.addEventListener('DOMContentLoaded', () => {
+        // Force loading screen
+        setTimeout(() => {
+            loadingScreen.classList.add('hidden');
+            chatContainer.classList.add('visible');
             messageInput.focus();
-        });
+        }, CONFIG.loadingDuration);
 
         // Keyboard navigation
         messageInput.addEventListener('keypress', (e) => {
@@ -727,4 +710,257 @@
             removeEmptyState();
 
             const msg = document.createElement('div');
-         
+            msg.className = `message ${sender}`;
+
+            const label = document.createElement('div');
+            label.className = 'message-label';
+            label.textContent = sender === 'user' ? 'You' : 'Mysteriousq AI';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = text;
+
+            msg.appendChild(label);
+            msg.appendChild(bubble);
+            chatMessages.appendChild(msg);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function add3DotMenu(bubble, text) {
+            const menuBtn = document.createElement('button');
+            menuBtn.className = 'message-menu-btn';
+            menuBtn.innerHTML = '⋮';
+            menuBtn.setAttribute('aria-label', 'Message options');
+            menuBtn.onclick = (e) => {
+                e.stopPropagation();
+                const menu = bubble.querySelector('.message-menu');
+                menu.classList.toggle('show');
+            };
+
+            const menu = document.createElement('div');
+            menu.className = 'message-menu';
+            menu.innerHTML = `
+                <div class="message-menu-item" onclick="copyText('${text.replace(/'/g, "\\'")}')">📋 Copy</div>
+                <div class="message-menu-item" onclick="selectText(event)">🔤 Select text</div>
+            `;
+
+            bubble.appendChild(menuBtn);
+            bubble.appendChild(menu);
+        }
+
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('✓ Copied');
+                document.querySelectorAll('.message-menu').forEach(m => m.classList.remove('show'));
+            });
+        }
+
+        function selectText(e) {
+            const bubble = e.target.closest('.message-bubble');
+            const range = document.createRange();
+            range.selectNodeContents(bubble);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            document.querySelectorAll('.message-menu').forEach(m => m.classList.remove('show'));
+        }
+
+        function showThinking() {
+            removeEmptyState();
+
+            const container = document.createElement('div');
+            container.className = 'thinking-container';
+            container.id = 'thinking';
+
+            const label = document.createElement('div');
+            label.className = 'message-label';
+            label.textContent = 'Mysteriousq AI';
+
+            const thinking = document.createElement('div');
+            thinking.className = 'thinking';
+            thinking.innerHTML = `Thinking<div class="thinking-dots"><span></span><span></span><span></span></div>`;
+
+            container.appendChild(label);
+            container.appendChild(thinking);
+            chatMessages.appendChild(container);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function removeThinking() {
+            const t = document.getElementById('thinking');
+            if (t) t.remove();
+        }
+
+        function showError(msg, canRetry = false) {
+            removeThinking();
+            removeEmptyState();
+
+            const container = document.createElement('div');
+            container.className = 'message bot';
+
+            const label = document.createElement('div');
+            label.className = 'message-label';
+            label.textContent = 'System';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble error-message';
+            bubble.textContent = msg;
+
+            if (canRetry) {
+                const retryBtn = document.createElement('button');
+                retryBtn.className = 'retry-btn';
+                retryBtn.textContent = '↻ Retry';
+                retryBtn.onclick = () => {
+                    container.remove();
+                    if (lastUserMessage) {
+                        messageInput.value = lastUserMessage;
+                        sendMessage();
+                    }
+                };
+                bubble.appendChild(retryBtn);
+            }
+
+            container.appendChild(label);
+            container.appendChild(bubble);
+            chatMessages.appendChild(container);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function formatText(text) {
+            text = text.replace(/\*\*(.*?)\*\*/g, '\n$1\n');
+            text = text.replace(/(\d+)\.\s+/g, '\n\n$1. ');
+            text = text.replace(/\n{3,}/g, '\n\n');
+            return text.trim();
+        }
+
+        async function typewriterEffect(element, text, speed = CONFIG.typewriterSpeed) {
+            let i = 0;
+            element.textContent = '';
+            
+            return new Promise((resolve) => {
+                function type() {
+                    if (i < text.length) {
+                        // Add character
+                        element.textContent += text.charAt(i);
+                        i++;
+                        
+                        // Scroll to bottom
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                        
+                        // Use requestAnimationFrame for better performance on long text
+                        if (i % 10 === 0) {
+                            requestAnimationFrame(() => setTimeout(type, speed));
+                        } else {
+                            setTimeout(type, speed);
+                        }
+                    } else {
+                        resolve();
+                    }
+                }
+                type();
+            });
+        }
+
+        async function addBotMessage(text) {
+            removeEmptyState();
+
+            const msg = document.createElement('div');
+            msg.className = 'message bot';
+
+            const label = document.createElement('div');
+            label.className = 'message-label';
+            label.textContent = 'Mysteriousq AI';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+
+            msg.appendChild(label);
+            msg.appendChild(bubble);
+            chatMessages.appendChild(msg);
+
+            const formatted = formatText(text);
+            
+            try {
+                // Ensure full text is typed, no matter how long
+                await typewriterEffect(bubble, formatted);
+            } catch (e) {
+                // Fallback: show full text immediately if typewriter fails
+                console.warn('Typewriter effect failed, showing full text:', e);
+                bubble.textContent = formatted;
+            }
+
+            // Add 3-dot menu after typing is complete
+            add3DotMenu(bubble, formatted);
+            
+            // Final scroll to ensure everything is visible
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const msg = messageInput.value.trim();
+            if (!msg) return;
+
+            lastUserMessage = msg;
+            sendButton.disabled = true;
+            sendButton.classList.add('sending');
+            sendButton.setAttribute('aria-busy', 'true');
+            messageInput.disabled = true;
+
+            addMessage(msg, 'user');
+            messageInput.value = '';
+
+            showThinking();
+
+            try {
+                const url = `${CONFIG.apiUrl}?prompt=${encodeURIComponent(msg)}&uid=${USER_ID}`;
+                const res = await fetch(url);
+                
+                if (!res.ok) {
+                    throw new Error(`API Error: ${res.status}`);
+                }
+                
+                const data = await res.json();
+                console.log('API Response:', data);
+                console.log('Response length:', data.response?.length || 0);
+                
+                // Check for API error
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                // Get response from various possible fields
+                let response = data.response || data.reply || data.result || data.message || data.answer;
+                
+                if (!response) {
+                    throw new Error('No response from API');
+                }
+
+                // Check if response seems cut off
+                const lastChar = response.trim().slice(-1);
+                const seemsCutOff = !'.!?'.includes(lastChar) && response.length > 500;
+                
+                removeThinking();
+                await addBotMessage(response);
+                
+                // If response seems incomplete, show a hint
+                if (seemsCutOff) {
+                    console.warn('Response may be incomplete. API returned:', response.length, 'characters');
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                const errorMsg = error.message.includes('prompt and uid') 
+                    ? '❌ API configuration error. Please check settings.'
+                    : '❌ Connection failed. Check your internet or try again.';
+                showError(errorMsg, true);
+            } finally {
+                sendButton.disabled = false;
+                sendButton.classList.remove('sending');
+                sendButton.setAttribute('aria-busy', 'false');
+                messageInput.disabled = false;
+                messageInput.focus();
+            }
+        }
+    </script>
+</body>
+</html>
