@@ -147,15 +147,6 @@
             flex-direction: column;
             position: relative;
             z-index: 1;
-            opacity: 0;
-        }
-
-        .chat-container.visible {
-            animation: fadeIn 0.6s ease forwards;
-        }
-
-        @keyframes fadeIn {
-            to { opacity: 1; }
         }
 
         /* Header */
@@ -172,6 +163,14 @@
             font-weight: 500;
             margin: 0;
             letter-spacing: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .sparkle-icon {
+            font-size: 20px;
         }
 
         .mysteriousq-text {
@@ -616,26 +615,16 @@
     </style>
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div id="loadingScreen" role="status" aria-live="polite" aria-label="Loading">
-        <div class="loader-icon">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M13 2L3 14h8l-1 8 10-12h-8z"/>
-            </svg>
-        </div>
-        <div class="loading-text">Loading Chat...</div>
-        <div class="loading-bar-container">
-            <div class="loading-bar"></div>
-        </div>
-    </div>
-
     <!-- Background -->
     <div class="gemini-bg" aria-hidden="true"></div>
 
     <!-- Chat -->
     <div class="chat-container" id="chatContainer" role="main">
         <div class="chat-header">
-            <h1><span class="mysteriousq-text">Mysteriousq AI Chat</span></h1>
+            <h1>
+                <span class="sparkle-icon">✨</span>
+                <span class="mysteriousq-text">Mysteriousq AI Chat</span>
+            </h1>
             <p>Developed by Siegfried Samá</p>
         </div>
 
@@ -679,7 +668,6 @@
     <script>
         const CONFIG = {
             typewriterSpeed: 12,
-            loadingDuration: 1500,
             toastDuration: 1500,
             apiUrl: 'https://kryptonite-api-library.onrender.com/api/gpt4-convo'
         };
@@ -697,7 +685,6 @@
         const USER_ID = getUserID();
 
         // Elements
-        const loadingScreen = document.getElementById('loadingScreen');
         const chatContainer = document.getElementById('chatContainer');
         const chatMessages = document.getElementById('chatMessages');
         const messageInput = document.getElementById('messageInput');
@@ -706,13 +693,9 @@
 
         let lastUserMessage = '';
 
-        // Force loading screen - guaranteed to show and hide
+        // Focus input on load
         window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                loadingScreen.classList.add('hidden');
-                chatContainer.classList.add('visible');
-                messageInput.focus();
-            }, CONFIG.loadingDuration);
+            messageInput.focus();
         });
 
         // Keyboard navigation
@@ -724,4 +707,24 @@
 
         // Close menus on click outside
         document.addEventListener('click', (e) => {
-   
+            if (!e.target.closest('.message-menu-btn') && !e.target.closest('.message-menu')) {
+                document.querySelectorAll('.message-menu').forEach(m => m.classList.remove('show'));
+            }
+        });
+
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), CONFIG.toastDuration);
+        }
+
+        function removeEmptyState() {
+            const empty = chatMessages.querySelector('.empty-state');
+            if (empty) empty.remove();
+        }
+
+        function addMessage(text, sender) {
+            removeEmptyState();
+
+            const msg = document.createElement('div');
+         
